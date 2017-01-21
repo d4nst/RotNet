@@ -305,11 +305,11 @@ def display_examples(model, input, num_images=5, size=None, crop_center=False,
 
         fig_number += 1
         ax = plt.subplot(num_images, 3, fig_number)
-        reconstructed_angle = angle_difference(predicted_angle, true_angle)
+        corrected_angle = angle_difference(predicted_angle, true_angle)
         if fig_number == 3:
-            plt.title('Reconstructed\n', fontdict=title_fontdict)
+            plt.title('Corrected\n', fontdict=title_fontdict)
         ax.text(
-            0.5, 1.03, 'Angle: {0}'.format(reconstructed_angle),
+            0.5, 1.03, 'Angle: {0}'.format(corrected_angle),
             horizontalalignment='center',
             transform=ax.transAxes,
             fontsize=11
