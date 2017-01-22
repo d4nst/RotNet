@@ -9,19 +9,36 @@ import keras.backend as K
 
 
 def angle_difference(x, y):
+    """
+    Calculate minimum difference between two angles.
+    """
     return 180 - abs(abs(x - y) - 180)
 
 
 def angle_error(y_true, y_pred):
+    """
+    Calculate the mean diference between the true angles
+    and the predicted angles. Each angle is represented
+    as a binary vector.
+    """
     diff = angle_difference(K.argmax(y_true), K.argmax(y_pred))
     return K.mean(K.cast(K.abs(diff), K.floatx()))
 
 
 def angle_error_regression(y_true, y_pred):
+    """
+    Calculate the mean diference between the true angles
+    and the predicted angles. Each angle is represented
+    as a float number between 0 and 1.
+    """
     return K.mean(angle_difference(y_true * 360, y_pred * 360))
 
 
 def binarize_images(x):
+    """
+    Convert images to range 0-1 and binarize them by making
+    0 the values below 0.1 and 1 the values above 0.1.
+    """
     x /= 255
     x[x >= 0.1] = 1
     x[x < 0.1] = 0
@@ -92,6 +109,10 @@ def crop_around_center(image, width, height):
 
 
 def crop_largest_rectangle(image, angle):
+    """
+    Crop around the center the largest possible rectangle
+    found with largest_rotated_rect.
+    """
     height, width, _ = image.shape
     return crop_around_center(
         image,
@@ -105,6 +126,13 @@ def crop_largest_rectangle(image, angle):
 
 def generate_rotated_image(image, angle, size=None, crop_center=False,
                            crop_largest_rect=False):
+    """
+    Generate a valid rotated image for the RotNetDataGenerator. If the
+    image is rectangular, the crop_center option should be used to make
+    it square. To crop out the black borders after rotation, use the
+    crop_largest_rect option. To resize the final image, use the size
+    option.
+    """
     height, width, channels = image.shape
     if crop_center:
         crop_size = width if width < height else height
@@ -127,6 +155,10 @@ def generate_rotated_image(image, angle, size=None, crop_center=False,
 
 
 class RotNetDataGenerator(Iterator):
+    """
+    Given a NumPy array of images or a list of image paths,
+    generate batches of rotated images and rotation angles on-the-fly.
+    """
 
     def __init__(self, input, input_shape=None, color_mode='rgb', batch_size=64,
                  one_hot=True, preprocess_func=None, rotate=True, crop_center=False,
@@ -149,6 +181,7 @@ class RotNetDataGenerator(Iterator):
             raise ValueError('Invalid color mode:', self.color_mode,
                              '; expected "rgb" or "grayscale".')
 
+        # check whether the input is a NumPy array or a list of paths
         if isinstance(input, (np.ndarray)):
             self.images = input
             N = self.images.shape[0]
@@ -162,11 +195,15 @@ class RotNetDataGenerator(Iterator):
 
     def next(self):
         with self.lock:
+            # get input data index and size of the current batch
             index_array, _, current_batch_size = next(self.index_generator)
+        # create array to hold the images
         batch_x = np.zeros((current_batch_size,) + self.input_shape, dtype='float32')
+        # create array to hold the labels
         batch_y = np.zeros(current_batch_size, dtype='float32')
 
         grayscale = self.color_mode == 'grayscale'
+        # iterate through the current batch
         for i, j in enumerate(index_array):
             if self.filenames is None:
                 image = self.images[j]
@@ -178,10 +215,12 @@ class RotNetDataGenerator(Iterator):
                 )
 
             if self.rotate:
+                # get a random angle
                 rotation_angle = np.random.randint(360)
             else:
                 rotation_angle = 0
 
+            # generate the rotated image
             rotated_image = generate_rotated_image(
                 image,
                 rotation_angle,
@@ -190,14 +229,17 @@ class RotNetDataGenerator(Iterator):
                 crop_largest_rect=self.crop_largest_rect
             )
 
+            # store the image and label in their corresponding batches
             batch_x[i] = rotated_image
             batch_y[i] = rotation_angle
 
         if self.one_hot:
+            # convert the numerical labels to binary labels
             batch_y = to_categorical(batch_y, 360)
         else:
             batch_y /= 360
 
+        # preprocess input images
         if self.preprocess_func:
             batch_x = self.preprocess_func(batch_x)
 
@@ -206,6 +248,12 @@ class RotNetDataGenerator(Iterator):
 
 def display_examples(model, input, num_images=5, size=None, crop_center=False,
                      crop_largest_rect=False, preprocess_func=None, save_path=None):
+    """
+    Given a model that predicts the rotation angle of an image,
+    and a NumPy array of images or a list of image paths, display
+    the specified number of example images in three columns:
+    Original, Rotated and Corrected.
+    """
 
     if isinstance(input, (np.ndarray)):
         images = input
@@ -321,4 +369,3 @@ def display_examples(model, input, num_images=5, size=None, crop_center=False,
 
     if save_path:
         plt.savefig(save_path)
-
