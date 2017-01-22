@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import os
+import sys
 import numpy as np
 
 from keras.callbacks import ModelCheckpoint, EarlyStopping, TensorBoard
@@ -9,6 +10,7 @@ from keras.layers import Dense, Dropout, Flatten, Input
 from keras.layers import Convolution2D, MaxPooling2D
 from keras.models import Model
 
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils import angle_error, RotNetDataGenerator, binarize_images
 
 

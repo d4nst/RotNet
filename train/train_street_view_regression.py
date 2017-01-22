@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import os
+import sys
 
 from keras.callbacks import ModelCheckpoint, EarlyStopping, TensorBoard
 from keras.applications.resnet50 import ResNet50
@@ -8,6 +9,7 @@ from keras.applications.imagenet_utils import preprocess_input
 from keras.models import Model
 from keras.layers import Dense, Flatten
 
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils import angle_error_regression, RotNetDataGenerator
 from data.street_view import get_filenames as get_street_view_filenames
 
