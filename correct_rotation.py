@@ -64,7 +64,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('model', help='Path to model')
     parser.add_argument('input_path', help='Path to image or directory')
-    parser.add_argument('-o', '--output', help='Output directory')
+    parser.add_argument('-o', '--output_path', help='Output directory')
     parser.add_argument('-b', '--batch_size', help='Batch size for running the network')
     parser.add_argument('-c', '--crop', dest='crop', default=False, action='store_true',
                         help='Crop out black borders after rotating')
@@ -72,7 +72,7 @@ if __name__ == '__main__':
 
     print('Loading model...')
     model_location = load_model(args.model, custom_objects={'angle_error': angle_error})
-    output_path = args.output if args.output else args.input
+    output_path = args.output_path if args.output_path else args.input_path
 
     print('Processsing input image(s)...')
     process_images(model_location, args.input_path, output_path,
