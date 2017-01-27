@@ -17,10 +17,6 @@ from utils import angle_error_regression, RotNetDataGenerator, binarize_images
 # we don't need the labels indicating the digit value, so we only load the images
 (X_train, _), (X_test, _) = mnist.load_data()
 
-# add dimension to account for the channels (assuming tensorflow ordering)
-X_train = np.expand_dims(X_train, axis=3).astype('float32')
-X_test = np.expand_dims(X_test, axis=3).astype('float32')
-
 model_name = 'rotnet_mnist_regression'
 
 # number of convolutional filters to use
