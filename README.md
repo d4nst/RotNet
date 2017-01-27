@@ -1,3 +1,5 @@
+**Note**: This is an old branch with worse performance than master since scikit-image is used for image manipulation instead of OpenCV.
+
 # RotNet
 
 This repository contains the code necessary to train and test convolutional neural network (CNN) models for predicting the rotation angle of an image to correct its orientation. I provide scripts to train two models, one on [MNIST](http://yann.lecun.com/exdb/mnist/) and another one on the [Google Street View dataset](http://crcv.ucf.edu/data/GMCP_Geolocalization/). Since the data for this application is generated on-the-fly, you can also train using your own images in a similar way. A detailed explanation of the code and motivation for this project can be found in [my blog](https://d4nst.github.io/).
