@@ -299,11 +299,11 @@ def display_examples(model, input, num_images=5, size=None, crop_center=False,
 
     if isinstance(input, (np.ndarray)):
         images = input
-        N, h, w, _ = images.shape
+        N, h, w = images.shape[:3]
         if not size:
             size = (h, w)
         indexes = np.random.choice(N, num_images)
-        images = images[indexes, :, :, :]
+        images = images[indexes, ...]
     else:
         images = []
         filenames = input
@@ -331,6 +331,9 @@ def display_examples(model, input, num_images=5, size=None, crop_center=False,
 
     x = np.asarray(x, dtype='float32')
     y = np.asarray(y, dtype='float32')
+
+    if x.ndim == 3:
+        x = np.expand_dims(x, axis=3)
 
     y = to_categorical(y, 360)
 
