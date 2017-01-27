@@ -2,7 +2,6 @@ from __future__ import print_function
 
 import os
 import sys
-import numpy as np
 
 from keras.callbacks import ModelCheckpoint, EarlyStopping, TensorBoard
 from keras.datasets import mnist
