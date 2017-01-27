@@ -3,7 +3,7 @@
 This repository contains the code necessary to train and test convolutional neural network (CNN) models for predicting the rotation angle of an image to correct its orientation. I provide scripts to train two models, one on [MNIST](http://yann.lecun.com/exdb/mnist/) and another one on the [Google Street View dataset](http://crcv.ucf.edu/data/GMCP_Geolocalization/). Since the data for this application is generated on-the-fly, you can also train using your own images in a similar way. A detailed explanation of the code and motivation for this project can be found in [my blog](https://d4nst.github.io/).
 
 ## Requirements
-The code mainly relies on [Keras](https://keras.io/#installation) to train and test the CNN models, and [scikit-image](http://scikit-image.org/download.html) for image manipulation. 
+The code mainly relies on [Keras](https://keras.io/#installation) to train and test the CNN models, and [OpenCV](https://pypi.python.org/pypi/opencv-python) for image manipulation. 
 
 The recommended way to use Keras is with the TensorFlow backend. If you want to use it with the Theano backend you will need to make some minor modifications to the code to make it work. 
 
