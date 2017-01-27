@@ -1,16 +1,14 @@
 from __future__ import print_function
 
 import os
+import cv2
 import numpy as np
 import argparse
-from skimage.io import imsave
-from skimage.transform import rotate
 
-from keras.preprocessing.image import img_to_array, load_img
 from keras.applications.imagenet_utils import preprocess_input
 from keras.models import load_model
 
-from utils import RotNetDataGenerator, crop_largest_rectangle, angle_error
+from utils import RotNetDataGenerator, crop_largest_rectangle, angle_error, rotate
 
 
 def process_images(model, input_path, output_path,
@@ -51,13 +49,14 @@ def process_images(model, input_path, output_path,
         os.makedirs(output_path)
 
     for path, predicted_angle in zip(image_paths, predicted_angles):
-        image = img_to_array(load_img(path))
-        image = rotate(image, -predicted_angle, resize=False, preserve_range=True)
+        image = cv2.imread(path)
+        rotated_image = rotate(image, -predicted_angle)
         if crop:
-            image = crop_largest_rectangle(image, -predicted_angle)
+            size = (image.shape[0], image.shape[1])
+            rotated_image = crop_largest_rectangle(rotated_image, -predicted_angle, size)
         if not output_is_image:
             output_filename = os.path.join(output_path, os.path.basename(path))
-        imsave(output_filename, image.astype('uint8'))
+        cv2.imwrite(output_filename, rotated_image)
 
 
 if __name__ == '__main__':

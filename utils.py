@@ -1,9 +1,9 @@
 import math
+import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-from skimage.transform import rotate, resize
 
-from keras.preprocessing.image import Iterator, img_to_array, load_img
+from keras.preprocessing.image import Iterator
 from keras.utils.np_utils import to_categorical
 import keras.backend as K
 
@@ -43,6 +43,77 @@ def binarize_images(x):
     x[x >= 0.1] = 1
     x[x < 0.1] = 0
     return x
+
+
+def rotate(image, angle):
+    """
+    Rotates an OpenCV 2 / NumPy image about it's centre by the given angle
+    (in degrees). The returned image will be large enough to hold the entire
+    new image, with a black background
+
+    Source: http://stackoverflow.com/questions/16702966/rotate-image-and-crop-out-black-borders
+    """
+
+    # Get the image size
+    # No that's not an error - NumPy stores image matricies backwards
+    image_size = (image.shape[1], image.shape[0])
+    image_center = tuple(np.array(image_size) / 2)
+
+    # Convert the OpenCV 3x2 rotation matrix to 3x3
+    rot_mat = np.vstack(
+        [cv2.getRotationMatrix2D(image_center, angle, 1.0), [0, 0, 1]]
+    )
+
+    rot_mat_notranslate = np.matrix(rot_mat[0:2, 0:2])
+
+    # Shorthand for below calcs
+    image_w2 = image_size[0] * 0.5
+    image_h2 = image_size[1] * 0.5
+
+    # Obtain the rotated coordinates of the image corners
+    rotated_coords = [
+        (np.array([-image_w2,  image_h2]) * rot_mat_notranslate).A[0],
+        (np.array([ image_w2,  image_h2]) * rot_mat_notranslate).A[0],
+        (np.array([-image_w2, -image_h2]) * rot_mat_notranslate).A[0],
+        (np.array([ image_w2, -image_h2]) * rot_mat_notranslate).A[0]
+    ]
+
+    # Find the size of the new image
+    x_coords = [pt[0] for pt in rotated_coords]
+    x_pos = [x for x in x_coords if x > 0]
+    x_neg = [x for x in x_coords if x < 0]
+
+    y_coords = [pt[1] for pt in rotated_coords]
+    y_pos = [y for y in y_coords if y > 0]
+    y_neg = [y for y in y_coords if y < 0]
+
+    right_bound = max(x_pos)
+    left_bound = min(x_neg)
+    top_bound = max(y_pos)
+    bot_bound = min(y_neg)
+
+    new_w = int(abs(right_bound - left_bound))
+    new_h = int(abs(top_bound - bot_bound))
+
+    # We require a translation matrix to keep the image centred
+    trans_mat = np.matrix([
+        [1, 0, int(new_w * 0.5 - image_w2)],
+        [0, 1, int(new_h * 0.5 - image_h2)],
+        [0, 0, 1]
+    ])
+
+    # Compute the tranform for the combined rotation and translation
+    affine_mat = (np.matrix(trans_mat) * np.matrix(rot_mat))[0:2, :]
+
+    # Apply the transform
+    result = cv2.warpAffine(
+        image,
+        affine_mat,
+        (new_w, new_h),
+        flags=cv2.INTER_LINEAR
+    )
+
+    return result
 
 
 def largest_rotated_rect(w, h, angle):
@@ -108,12 +179,11 @@ def crop_around_center(image, width, height):
     return image[y1:y2, x1:x2]
 
 
-def crop_largest_rectangle(image, angle):
+def crop_largest_rectangle(image, angle, height, width):
     """
     Crop around the center the largest possible rectangle
     found with largest_rotated_rect.
     """
-    height, width, _ = image.shape
     return crop_around_center(
         image,
         *largest_rotated_rect(
@@ -133,23 +203,21 @@ def generate_rotated_image(image, angle, size=None, crop_center=False,
     crop_largest_rect option. To resize the final image, use the size
     option.
     """
-    height, width, channels = image.shape
+    height, width = image.shape[:2]
     if crop_center:
-        crop_size = width if width < height else height
-        image = crop_around_center(image, crop_size, crop_size)
+        if width < height:
+            height = width
+        else:
+            width = height
+        image = crop_around_center(image, height, width)
 
-    image = rotate(image, angle, resize=False, preserve_range=True)
+    image = rotate(image, angle)
 
     if crop_largest_rect:
-        image = crop_largest_rectangle(image, angle)
+        image = crop_largest_rectangle(image, angle, height, width)
 
     if size:
-        new_width, new_height = size
-        image = resize(
-            image,
-            (new_width, new_height, channels),
-            preserve_range=True
-        )
+        image = cv2.resize(image, size)
 
     return image
 
@@ -175,7 +243,6 @@ class RotNetDataGenerator(Iterator):
         self.crop_center = crop_center
         self.crop_largest_rect = crop_largest_rect
         self.shuffle = shuffle
-        self.dim_ordering = K.image_dim_ordering()
 
         if self.color_mode not in {'rgb', 'grayscale'}:
             raise ValueError('Invalid color mode:', self.color_mode,
@@ -187,6 +254,9 @@ class RotNetDataGenerator(Iterator):
             N = self.images.shape[0]
             if not self.input_shape:
                 self.input_shape = self.images.shape[1:]
+                # add dimension if the images are greyscale
+                if len(self.input_shape) == 2:
+                    self.input_shape = self.input_shape + (1,)
         else:
             self.filenames = input
             N = len(self.filenames)
@@ -202,17 +272,15 @@ class RotNetDataGenerator(Iterator):
         # create array to hold the labels
         batch_y = np.zeros(current_batch_size, dtype='float32')
 
-        grayscale = self.color_mode == 'grayscale'
         # iterate through the current batch
         for i, j in enumerate(index_array):
             if self.filenames is None:
                 image = self.images[j]
             else:
-                image = load_img(self.filenames[j], grayscale=grayscale)
-                image = img_to_array(
-                    image,
-                    dim_ordering=self.dim_ordering
-                )
+                is_color = int(self.color_mode == 'rgb')
+                image = cv2.imread(self.filenames[j], is_color)
+                if is_color:
+                    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
             if self.rotate:
                 # get a random angle
@@ -228,6 +296,10 @@ class RotNetDataGenerator(Iterator):
                 crop_center=self.crop_center,
                 crop_largest_rect=self.crop_largest_rect
             )
+
+            # add dimension to account for the channels if the image is greyscale
+            if rotated_image.ndim == 2:
+                rotated_image = np.expand_dims(rotated_image, axis=2)
 
             # store the image and label in their corresponding batches
             batch_x[i] = rotated_image
@@ -268,8 +340,9 @@ def display_examples(model, input, num_images=5, size=None, crop_center=False,
         N = len(filenames)
         indexes = np.random.choice(N, num_images)
         for i in indexes:
-            image = load_img(filenames[i])
-            images.append(img_to_array(image))
+            image = cv2.imread(filenames[i])
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            images.append(image)
         images = np.asarray(images)
 
     x = []
@@ -286,8 +359,8 @@ def display_examples(model, input, num_images=5, size=None, crop_center=False,
         x.append(rotated_image)
         y.append(rotation_angle)
 
-    x = np.asarray(x)
-    y = np.asarray(y)
+    x = np.asarray(x, dtype='float32')
+    y = np.asarray(y, dtype='float32')
 
     y = to_categorical(y, 360)
 
@@ -308,23 +381,13 @@ def display_examples(model, input, num_images=5, size=None, crop_center=False,
 
     fig_number = 0
     for rotated_image, true_angle, predicted_angle in zip(x_rot, y, y_pred):
-        original_image = rotate(
-            rotated_image,
-            -true_angle,
-            resize=False,
-            preserve_range=True,
-        )
+        original_image = rotate(rotated_image, -true_angle)
         if crop_largest_rect:
-            original_image = crop_largest_rectangle(original_image, -true_angle)
+            original_image = crop_largest_rectangle(original_image, -true_angle, *size)
 
-        corrected_image = rotate(
-            rotated_image,
-            -predicted_angle,
-            resize=False,
-            preserve_range=True,
-        )
+        corrected_image = rotate(rotated_image, -predicted_angle)
         if crop_largest_rect:
-            corrected_image = crop_largest_rectangle(corrected_image, -predicted_angle)
+            corrected_image = crop_largest_rectangle(corrected_image, -predicted_angle, *size)
 
         if x.shape[3] == 1:
             options = {'cmap': 'gray'}
