@@ -53,7 +53,7 @@ def process_images(model, input_path, output_path,
         rotated_image = rotate(image, -predicted_angle)
         if crop:
             size = (image.shape[0], image.shape[1])
-            rotated_image = crop_largest_rectangle(rotated_image, -predicted_angle, size)
+            rotated_image = crop_largest_rectangle(rotated_image, -predicted_angle, *size)
         if not output_is_image:
             output_filename = os.path.join(output_path, os.path.basename(path))
         cv2.imwrite(output_filename, rotated_image)
@@ -72,7 +72,8 @@ if __name__ == '__main__':
     print('Loading model...')
     model_location = load_model(args.model, custom_objects={'angle_error': angle_error})
     output_path = args.output_path if args.output_path else args.input_path
-
+    print(args.crop)
+    
     print('Processsing input image(s)...')
     process_images(model_location, args.input_path, output_path,
                    args.batch_size, args.crop)
