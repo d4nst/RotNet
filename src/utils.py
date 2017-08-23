@@ -3,12 +3,10 @@ from __future__ import division
 import math
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
 
 from keras.preprocessing.image import Iterator
 from keras.utils.np_utils import to_categorical
 import keras.backend as K
-
 
 def angle_difference(x, y):
     """
@@ -164,6 +162,16 @@ def crop_largest_rectangle(image, angle, height, width):
     )
 
 
+def embed_with_random_translation(image, target_size):
+    slide = []
+    for i in range(2):
+        slide.append(np.random.randint(0, target_size[i] - image.shape[i] + 1))
+
+    res = np.zeros(target_size)
+    res[slide[0]:slide[0] + image.shape[0], slide[1]:slide[1] + image.shape[1]] = image
+    return res
+
+
 def generate_rotated_image(image, angle, size=None, crop_center=False,
                            crop_largest_rect=False):
     """
@@ -200,7 +208,7 @@ class RotNetDataGenerator(Iterator):
 
     def __init__(self, input, input_shape=None, color_mode='rgb', batch_size=64,
                  one_hot=True, preprocess_func=None, rotate=True, crop_center=False,
-                 crop_largest_rect=False, shuffle=False, seed=None):
+                 crop_largest_rect=False, target_img_size=None, shuffle=False, seed=None):
 
         self.images = None
         self.filenames = None
@@ -212,6 +220,7 @@ class RotNetDataGenerator(Iterator):
         self.rotate = rotate
         self.crop_center = crop_center
         self.crop_largest_rect = crop_largest_rect
+        self.target_img_size = target_img_size
         self.shuffle = shuffle
 
         if self.color_mode not in {'rgb', 'grayscale'}:
@@ -238,7 +247,11 @@ class RotNetDataGenerator(Iterator):
             # get input data index and size of the current batch
             index_array, _, current_batch_size = next(self.index_generator)
         # create array to hold the images
-        batch_x = np.zeros((current_batch_size,) + self.input_shape, dtype='float32')
+        if self.target_img_size is not None:
+            img_shape = self.target_img_size + (1,)
+        else:
+            img_shape = self.input_shape
+        batch_x = np.zeros((current_batch_size,) + img_shape, dtype='float32')
         # create array to hold the labels
         batch_y = np.zeros(current_batch_size, dtype='float32')
 
@@ -267,6 +280,10 @@ class RotNetDataGenerator(Iterator):
                 crop_largest_rect=self.crop_largest_rect
             )
 
+            if self.target_img_size is not None:
+                rotated_image = embed_with_random_translation(
+                    rotated_image, self.target_img_size)
+
             # add dimension to account for the channels if the image is greyscale
             if rotated_image.ndim == 2:
                 rotated_image = np.expand_dims(rotated_image, axis=2)
@@ -289,13 +306,20 @@ class RotNetDataGenerator(Iterator):
 
 
 def display_examples(model, input, num_images=5, size=None, crop_center=False,
-                     crop_largest_rect=False, preprocess_func=None, save_path=None):
+                     crop_largest_rect=False, preprocess_func=None,
+                     target_img_size=None, save_path=None):
     """
     Given a model that predicts the rotation angle of an image,
     and a NumPy array of images or a list of image paths, display
     the specified number of example images in three columns:
     Original, Rotated and Corrected.
     """
+
+    # temporary hack because I had trouble on MacOS with matplotlib backend
+    import matplotlib
+    # use non-interactive backend
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
 
     if isinstance(input, (np.ndarray)):
         images = input
@@ -312,6 +336,7 @@ def display_examples(model, input, num_images=5, size=None, crop_center=False,
         for i in indexes:
             image = cv2.imread(filenames[i])
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
             images.append(image)
         images = np.asarray(images)
 
@@ -326,6 +351,11 @@ def display_examples(model, input, num_images=5, size=None, crop_center=False,
             crop_center=crop_center,
             crop_largest_rect=crop_largest_rect
         )
+
+        if target_img_size is not None:
+            rotated_image = embed_with_random_translation(
+                rotated_image, target_img_size)
+
         x.append(rotated_image)
         y.append(rotation_angle)
 
