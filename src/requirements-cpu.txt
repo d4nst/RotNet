@@ -1,0 +1,9 @@
+numpy==1.12.1
+opencv-python==3.2.0.7
+tensorflow==1.2.1
+google-cloud-datastore==1.2.0
+google-cloud-logging==1.2.0
+tensorpack==0.3.0
+keras
+matplotlib
+h5py

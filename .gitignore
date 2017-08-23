@@ -94,3 +94,13 @@ ENV/
 data/street_view
 logs/
 *.hdf5
+
+# MacOS
+.DS_Store
+*/.DS_Store
+
+# Atom config files
+.ftpconfig
+
+# leaderboard
+src/run.sh
