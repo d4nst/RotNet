@@ -1,7 +1,7 @@
 from __future__ import print_function
 
 import os
-import numpy as np
+import sys
 
 from keras.callbacks import ModelCheckpoint, EarlyStopping, TensorBoard
 from keras.datasets import mnist
@@ -9,15 +9,20 @@ from keras.layers import Dense, Dropout, Flatten, Input
 from keras.layers import Conv2D, MaxPooling2D
 from keras.models import Model
 
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils import angle_error, RotNetDataGenerator, binarize_images
 # we don't need the labels indicating the digit value, so we only load the images
 (X_train, _), (X_test, _) = mnist.load_data()
 
+<<<<<<< HEAD
 # add dimension to account for the channels (assuming tensorflow ordering)
 X_train = np.expand_dims(X_train, axis=3).astype('float32')
 X_test = np.expand_dims(X_test, axis=3).astype('float32')
 
 model_name = 'rotnet_mnist_test'
+=======
+model_name = 'rotnet_mnist'
+>>>>>>> 51ae1f035d5c12552173d81503325ca55e7134d5
 
 # number of convolutional filters to use
 nb_filters = 64
@@ -28,7 +33,8 @@ kernel_size = (3, 3)
 # number of classes
 nb_classes = 360
 
-nb_train_samples, img_rows, img_cols, img_channels = X_train.shape
+nb_train_samples, img_rows, img_cols = X_train.shape
+img_channels = 1
 input_shape = (img_rows, img_cols, img_channels)
 nb_test_samples = X_test.shape[0]
 
