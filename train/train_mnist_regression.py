@@ -25,7 +25,8 @@ pool_size = (2, 2)
 # convolution kernel size
 kernel_size = (3, 3)
 
-nb_train_samples, img_rows, img_cols, img_channels = X_train.shape
+nb_train_samples, img_rows, img_cols = X_train.shape
+img_channels = 1
 input_shape = (img_rows, img_cols, img_channels)
 nb_test_samples = X_test.shape[0]
 
