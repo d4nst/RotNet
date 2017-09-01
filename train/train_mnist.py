@@ -6,13 +6,11 @@ import sys
 from keras.callbacks import ModelCheckpoint, EarlyStopping, TensorBoard
 from keras.datasets import mnist
 from keras.layers import Dense, Dropout, Flatten, Input
-from keras.layers import Convolution2D, MaxPooling2D
+from keras.layers import Conv2D, MaxPooling2D
 from keras.models import Model
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils import angle_error, RotNetDataGenerator, binarize_images
-
-
 # we don't need the labels indicating the digit value, so we only load the images
 (X_train, _), (X_test, _) = mnist.load_data()
 
@@ -38,10 +36,8 @@ print(nb_test_samples, 'test samples')
 
 # model definition
 input = Input(shape=(img_rows, img_cols, img_channels))
-x = Convolution2D(nb_filters, kernel_size[0], kernel_size[1],
-                  activation='relu')(input)
-x = Convolution2D(nb_filters, kernel_size[0], kernel_size[1],
-                  activation='relu')(x)
+x = Conv2D(nb_filters, kernel_size, activation='relu')(input)
+x = Conv2D(nb_filters, kernel_size, activation='relu')(x)
 x = MaxPooling2D(pool_size=(2, 2))(x)
 x = Dropout(0.25)(x)
 x = Flatten()(x)
@@ -49,7 +45,7 @@ x = Dense(128, activation='relu')(x)
 x = Dropout(0.25)(x)
 x = Dense(nb_classes, activation='softmax')(x)
 
-model = Model(input=input, output=x)
+model = Model(inputs=input, outputs=x)
 
 model.summary()
 
@@ -82,14 +78,14 @@ model.fit_generator(
         preprocess_func=binarize_images,
         shuffle=True
     ),
-    samples_per_epoch=nb_train_samples,
-    nb_epoch=nb_epoch,
+    steps_per_epoch=nb_train_samples / batch_size,
+    epochs=nb_epoch,
     validation_data=RotNetDataGenerator(
         X_test,
         batch_size=batch_size,
         preprocess_func=binarize_images
     ),
-    nb_val_samples=nb_test_samples,
+    validation_steps=nb_test_samples / batch_size,
     verbose=1,
     callbacks=[checkpointer, early_stopping, tensorboard]
 )

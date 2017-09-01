@@ -35,7 +35,7 @@ x = Flatten()(x)
 final_output = Dense(1, activation='sigmoid', name='fc1')(x)
 
 # create the new model
-model = Model(input=base_model.input, output=final_output)
+model = Model(inputs=base_model.input, outputs=final_output)
 
 model.summary()
 
@@ -71,8 +71,8 @@ model.fit_generator(
         crop_largest_rect=True,
         shuffle=True
     ),
-    samples_per_epoch=len(train_filenames),
-    nb_epoch=nb_epoch,
+    steps_per_epoch=len(train_filenames) / batch_size,
+    epochs=nb_epoch,
     validation_data=RotNetDataGenerator(
         test_filenames,
         input_shape=input_shape,
@@ -82,7 +82,7 @@ model.fit_generator(
         crop_center=True,
         crop_largest_rect=True
     ),
-    nb_val_samples=len(test_filenames),
+    validation_steps=len(test_filenames) / batch_size,
     callbacks=[checkpointer, early_stopping, tensorboard],
     nb_worker=10,
     pickle_safe=True,
