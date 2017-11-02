@@ -10,7 +10,7 @@ The recommended way to use Keras is with the TensorFlow backend. If you want to 
 ## Train
 Run either `python train/train_mnist.py` to train on MNIST or `python train/train_street_view.py` to train on the Google Street View dataset. Note that the first time you run the scripts will take longer since the datasets will be automatically downloaded. Also, you will need a decent GPU to train the *ResNet50* model that is used in `train_street_view.py`, otherwise it will take quite long to finish.
 
-If you only want to test the models, you can download pre-trained versions [here](https://drive.google.com/file/d/0B9eNEi5uvOI1SmlITDlyQzRIckU/view).
+If you only want to test the models, you can download pre-trained versions [here](https://drive.google.com/open?id=0B9eNEi5uvOI1SjQ5M2tQY3ZMM1U).
 
 Note also that the regression models (`train_mnist_regression.py` and `train_street_view_regression.py`) don't provide a good accuracy and are only included for illustration purposes.
 
