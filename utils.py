@@ -233,14 +233,11 @@ class RotNetDataGenerator(Iterator):
 
         super(RotNetDataGenerator, self).__init__(N, batch_size, shuffle, seed)
 
-    def next(self):
-        with self.lock:
-            # get input data index and size of the current batch
-            index_array, _, current_batch_size = next(self.index_generator)
+    def _get_batches_of_transformed_samples(self, index_array):
         # create array to hold the images
-        batch_x = np.zeros((current_batch_size,) + self.input_shape, dtype='float32')
+        batch_x = np.zeros((len(index_array),) + self.input_shape, dtype='float32')
         # create array to hold the labels
-        batch_y = np.zeros(current_batch_size, dtype='float32')
+        batch_y = np.zeros(len(index_array), dtype='float32')
 
         # iterate through the current batch
         for i, j in enumerate(index_array):
@@ -286,6 +283,13 @@ class RotNetDataGenerator(Iterator):
             batch_x = self.preprocess_func(batch_x)
 
         return batch_x, batch_y
+
+    def next(self):
+        with self.lock:
+            # get input data index and size of the current batch
+            index_array, _, current_batch_size = next(self.index_generator)
+        # create array to hold the images
+        return self._get_batches_of_transformed_samples(index_array)
 
 
 def display_examples(model, input, num_images=5, size=None, crop_center=False,
