@@ -287,7 +287,7 @@ class RotNetDataGenerator(Iterator):
     def next(self):
         with self.lock:
             # get input data index and size of the current batch
-            index_array, _, current_batch_size = next(self.index_generator)
+            index_array = next(self.index_generator)
         # create array to hold the images
         return self._get_batches_of_transformed_samples(index_array)
 
