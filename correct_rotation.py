@@ -45,6 +45,9 @@ def process_images(model, input_path, output_path,
 
     predicted_angles = np.argmax(predictions, axis=1)
 
+    if output_path == '':
+        output_path = '.'
+
     if not os.path.exists(output_path):
         os.makedirs(output_path)
 
