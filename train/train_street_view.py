@@ -3,11 +3,12 @@ from __future__ import print_function
 import os
 import sys
 
-from keras.callbacks import ModelCheckpoint, EarlyStopping, TensorBoard
+from keras.callbacks import ModelCheckpoint, EarlyStopping, TensorBoard, ReduceLROnPlateau
 from keras.applications.resnet50 import ResNet50
 from keras.applications.imagenet_utils import preprocess_input
 from keras.models import Model
 from keras.layers import Dense, Flatten
+from keras.optimizers import SGD
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from utils import angle_error, RotNetDataGenerator
@@ -43,7 +44,7 @@ model.summary()
 
 # model compilation
 model.compile(loss='categorical_crossentropy',
-              optimizer='adam',
+              optimizer=SGD(lr=0.01, momentum=0.9),
               metrics=[angle_error])
 
 # training parameters
@@ -55,11 +56,14 @@ if not os.path.exists(output_folder):
     os.makedirs(output_folder)
 
 # callbacks
+monitor = 'val_angle_error'
 checkpointer = ModelCheckpoint(
     filepath=os.path.join(output_folder, model_name + '.hdf5'),
+    monitor=monitor,
     save_best_only=True
 )
-early_stopping = EarlyStopping(patience=2)
+reduce_lr = ReduceLROnPlateau(monitor=monitor, patience=3)
+early_stopping = EarlyStopping(monitor=monitor, patience=5)
 tensorboard = TensorBoard()
 
 # training loop
@@ -84,8 +88,6 @@ model.fit_generator(
         crop_largest_rect=True
     ),
     validation_steps=len(test_filenames) / batch_size,
-    callbacks=[checkpointer, early_stopping, tensorboard],
-    nb_worker=10,
-    pickle_safe=True,
-    verbose=1
+    callbacks=[checkpointer, reduce_lr, early_stopping, tensorboard],
+    workers=10
 )
