@@ -13,20 +13,20 @@ from utils import RotNetDataGenerator, crop_largest_rectangle, angle_error, rota
 
 def process_images(model, input_path, output_path,
                    batch_size=64, crop=True):
-    extensions = ['.jpg', '.jpg', '.bmp', '.png']
+    extensions = ['.jpg', '.jpeg', '.bmp', '.png']
 
     output_is_image = False
     if os.path.isfile(input_path):
         image_paths = [input_path]
-        if os.path.splitext(output_path)[1] in extensions:
+        if os.path.splitext(output_path)[1].lower() in extensions:
             output_is_image = True
             output_filename = output_path
             output_path = os.path.dirname(output_filename)
     else:
         image_paths = [os.path.join(input_path, f)
                        for f in os.listdir(input_path)
-                       if os.path.splitext(f)[1] in extensions]
-        if os.path.splitext(output_path)[1] in extensions:
+                       if os.path.splitext(f)[1].lower() in extensions]
+        if os.path.splitext(output_path)[1].lower() in extensions:
             print('Output must be a directory!')
 
     predictions = model.predict_generator(
