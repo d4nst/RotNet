@@ -22,6 +22,8 @@ def get_filenames(path):
     if not os.path.exists(path):
         os.makedirs(path)
         download(path)
+    elif len(os.listdir(path)) == 0:
+        download(path)
 
     image_paths = []
     for filename in os.listdir(path):
