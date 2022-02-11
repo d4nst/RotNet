@@ -14,7 +14,7 @@ matplotlib==3.1.1
 numpy==1.17.2
 opencv-python==4.1.1.26
 opt-einsum==3.1.0
-protobuf==3.9.2
+protobuf==3.15.0
 pyparsing==2.4.2
 python-dateutil==2.8.0
 PyYAML==5.1.2
